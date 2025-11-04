@@ -3,6 +3,7 @@
 import React, {useState, useEffect} from 'react'
 import axios from "axios"
 import * as yup from "yup"
+import { javascript } from 'webpack'
 
 const e = { // This is a dictionary of validation error messages.
   // username
@@ -41,15 +42,33 @@ export default function App() {
   // You will need states to track (1) the form, (2) the validation errors,
   // (3) whether submit is disabled, (4) the success message from the server,
   // and (5) the failure message from the server.
-const [values, setValues ] = useState(getinitalValues())
-const [erros, setErrors] = useState(getInitalErrors())
+const [values, setValues ] = useState(getInitalValues())
+const [errors, setErrors] = useState(getInitalErrors())
 const [serverSuccess,setServerSucess] = useState()
 const [serverFailure, setServerFailure]=useState()
 const [formEnabled,setFormEnabled] =useState()
   // ✨ TASK: BUILD YOUR EFFECT HERE
   // Whenever the state of the form changes, validate it against the schema
   // and update the state that tracks whether the form is submittable.
+  const userSchema = yup.object().shape({
+    username: yup.string().trim()
+    .required(e.usernameRequired)
+    .min(3,e.usernameMin).max(20,e.usernameMax),
+    favLanguage:yup.string()
+    .required(e.favLanguageRequired).trim()
+    .oneOf(['javascript' ,'rust'], e.favLanguageOptions),
+    favFood:yup.string()
+    .required(e.favFoodRequired).trim()
+    .oneOf(['broccoli', 'spaghetti', 'pizza'], e.favFoodOptions),
+    agreement:yup.boolean()
+    .required(e.agreementRequired)
+    .oneOf([true], e.agreementOptions)
+  })
 
+  useEffect(()=>{
+    userSchema.isValid(values).then(setFormEnabled)
+
+  }, [values])
   const onChange = evt => {
     // ✨ TASK: IMPLEMENT YOUR INPUT CHANGE HANDLER
     // The logic is a bit different for the checkbox, but you can check
@@ -63,7 +82,6 @@ const [formEnabled,setFormEnabled] =useState()
 
   const onSubmit = evt => {
     evt.preventDefault()
-
     axios
     .post(' https://webapis.bloomtechdev.com/registration`', values)
     .then(res=>{
@@ -82,6 +100,13 @@ const [formEnabled,setFormEnabled] =useState()
     // the form. You must put the success and failure messages from the server
     // in the states you have reserved for them, and the form
     // should be re-enabled.
+    yup.reach(userSchema, name).validate(value)
+    .then(()=>{
+      setErrors({...errors, [name]: ""})
+    })
+    .catch((err)=>{
+      setErrors({...errors,[name]:err.error[0]})
+    })
   }
 
   return (
